@@ -122,6 +122,15 @@ lazy val commonSettings =
         "scm:git:git@github.com:scalacenter/scalajs-bundler.git"
       )
     ),
+    crossSbtVersions := List("0.13.16", "1.0.1"),
+    scalaVersion := {
+      (sbtBinaryVersion in pluginCrossBuild).value match {
+        case "0.13" => "2.10.6"
+        case _ => "2.12.3"
+      }
+    },
+    // fixed in https://github.com/sbt/sbt/pull/3397 (for sbt 0.13.17)
+    sbtBinaryVersion in update := (sbtBinaryVersion in pluginCrossBuild).value,
     scriptedLaunchOpts += "-Dplugin.version=" + version.value,
     scriptedBufferLog := false
   )

@@ -1,6 +1,7 @@
 package scalajsbundler.util
 
 import sbt._
+import scalajsbundler.Compat.Process
 
 object Commands {
 
