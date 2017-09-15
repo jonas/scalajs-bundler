@@ -164,8 +164,8 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
       *
       * @group settings
       */
-    val additionalNpmConfig: SettingKey[Map[String, util.JSON]] =
-      settingKey[Map[String, util.JSON]]("Additional option to include in the generated 'package.json'")
+    val additionalNpmConfig: SettingKey[Map[String, JSON]] =
+      settingKey[Map[String, JSON]]("Additional option to include in the generated 'package.json'")
 
     /**
       * [[scalajsbundler.BundlingMode]] to use.
@@ -492,10 +492,11 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
       val installDir = target.value / "scalajs-bundler-jsdom"
       val log = streams.value.log
       val jsdomVersion = (version in installJsdom).value
+      val usingYarn = useYarn.value
       if (!installDir.exists()) {
         log.info(s"Installing jsdom in ${installDir.absolutePath}")
         IO.createDirectory(installDir)
-        install(installDir, useYarn.value, log)(s"jsdom@$jsdomVersion")
+        install(installDir, usingYarn, log)(s"jsdom@$jsdomVersion")
       }
       installDir
     },
@@ -505,11 +506,12 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
       val log = streams.value.log
       val webpackVersion = (version in webpack).value
       val webpackDevServerVersion = (version in installWebpackDevServer).value
+      val usingYarn = useYarn.value
 
       if (!installDir.exists()) {
         log.info(s"Installing webpack-dev-server in ${installDir.absolutePath}")
         IO.createDirectory(installDir)
-        install(installDir, useYarn.value, log)(
+        install(installDir, usingYarn, log)(
           // Webpack version should match the setting
           s"webpack@$webpackVersion",
           s"webpack-dev-server@$webpackDevServerVersion"
@@ -539,6 +541,7 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
         val targetDir = (crossTarget in npmUpdate).value
         val jsResources = scalaJSNativeLibraries.value.data
         val packageJsonFile = scalaJSBundlerPackageJson.value
+        val usingYarn = useYarn.value
 
         val cachedActionFunction =
           FileFunction.cached(
@@ -546,7 +549,7 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
             inStyle = FilesInfo.hash
           ) { _ =>
             log.info("Updating NPM dependencies")
-            if (useYarn.value) {
+            if (usingYarn) {
               Yarn.run("install", "--non-interactive")(targetDir, log)
             } else {
               Npm.run("install")(targetDir, log)
@@ -618,6 +621,7 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
                 val bundle = targetDir / s"$sjsOutputName-bundle.js"
 
                 val customWebpackConfigFile = (webpackConfigFile in Test).value
+                val customWebpackResources = webpackResources.value
 
                 val writeTestBundleFunction =
                   FileFunction.cached(
@@ -630,7 +634,7 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
 
                     customWebpackConfigFile match {
                       case Some(configFile) =>
-                        val customConfigFileCopy = Webpack.copyCustomWebpackConfigFiles(targetDir, webpackResources.value.get)(configFile)
+                        val customConfigFileCopy = Webpack.copyCustomWebpackConfigFiles(targetDir, customWebpackResources.get)(configFile)
                         Webpack.run("--config", customConfigFileCopy.getAbsolutePath, loader.absolutePath, bundle.absolutePath)(targetDir, logger)
                       case None =>
                         Webpack.run(loader.absolutePath, bundle.absolutePath)(targetDir, logger)
@@ -651,9 +655,12 @@ object ScalaJSBundlerPlugin extends AutoPlugin {
 
         // Pretend that we are not using a CommonJS module if jsdom is involved, otherwise that
         // would be incompatible with the way jsdom loads scripts
-        val (moduleKind, moduleIdentifier) =
+        val (moduleKind, moduleIdentifier) = {
+          val withoutDom = (scalaJSModuleKind.value, scalaJSModuleIdentifier.value)
+
           if ((scalaJSRequestsDOM in fastOptJS).value) (ModuleKind.NoModule, None)
-          else (scalaJSModuleKind.value, scalaJSModuleIdentifier.value)
+          else withoutDom
+        }
 
         val detector =
           new FrameworkDetectorWrapper(env, moduleKind, moduleIdentifier).wrapped

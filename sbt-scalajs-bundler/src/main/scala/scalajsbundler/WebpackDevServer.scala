@@ -62,9 +62,9 @@ private [scalajsbundler] class WebpackDevServer {
 
     val command = Seq(
       "node",
-      devServerPath.absolutePath,
+      devServerPath.getAbsolutePath,
       "--config",
-      configPath.absolutePath,
+      configPath.getAbsolutePath,
       "--port",
       port.toString
     ) ++ extraArgs

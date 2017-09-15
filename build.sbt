@@ -8,7 +8,7 @@ val `sbt-scalajs-bundler` =
       sbtPlugin := true,
       name := "sbt-scalajs-bundler",
       description := "Module bundler for Scala.js projects",
-      addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.18")
+      addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.19")
     )
 
 val `sbt-web-scalajs-bundler` =
@@ -23,7 +23,7 @@ val `sbt-web-scalajs-bundler` =
       },
       name := "sbt-web-scalajs-bundler",
       description := "Module bundler for Scala.js projects (integration with sbt-web-scalajs)",
-      addSbtPlugin("com.vmunier" % "sbt-web-scalajs" % "1.0.5")
+      addSbtPlugin("com.vmunier" % "sbt-web-scalajs" % "1.0.6")
     )
     .dependsOn(`sbt-scalajs-bundler`)
 
@@ -68,9 +68,8 @@ import ReleaseTransformations._
 
 val `scalajs-bundler` =
   project.in(file("."))
-    .settings(ScriptedPlugin.scriptedSettings ++ noPublishSettings: _*)
+    .settings(noPublishSettings: _*)
     .settings(
-      sbtPlugin := true,
       releaseProcess := Seq[ReleaseStep](
         checkSnapshotDependencies,
         inquireVersions,
@@ -88,9 +87,7 @@ val `scalajs-bundler` =
         commitNextVersion,
         pushChanges,
         releaseStepTask(GhPagesKeys.pushSite in manual)
-      ),
-      scriptedLaunchOpts += "-Dplugin.version=" + version.value,
-      scriptedBufferLog := false
+      )
     )
     .aggregate(`sbt-scalajs-bundler`, `sbt-web-scalajs-bundler`, manual, apiDoc)
 

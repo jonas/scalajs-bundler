@@ -9,7 +9,6 @@ import webscalajs.WebScalaJS
 import webscalajs.WebScalaJS.autoImport._
 
 import scala.collection.immutable.Nil
-import scalajsbundler.Webpack
 import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport._
 
 /**
@@ -67,6 +66,7 @@ object WebScalaJSBundlerPlugin extends AutoPlugin {
       val npmAssetsMappings = npmAssets.value
       val selfIncludeFilter = (includeFilter in self).value
       val selfExcludeFilter = (excludeFilter in self).value
+      val sourcemapScalaFiles = WebScalaJS.sourcemapScalaFiles(sjsStage).value
       Def.task { mappings: Seq[PathMapping] =>
         val filtered = filterMappings(mappings, selfIncludeFilter, selfExcludeFilter)
 
@@ -93,7 +93,7 @@ object WebScalaJSBundlerPlugin extends AutoPlugin {
             } else Seq(file -> path)
           }
 
-        filtered ++ bundlesWithSourceMaps ++ WebScalaJS.sourcemapScalaFiles(sjsStage).value ++ npmAssetsMappings
+        filtered ++ bundlesWithSourceMaps ++ sourcemapScalaFiles ++ npmAssetsMappings
       }
     }
 
